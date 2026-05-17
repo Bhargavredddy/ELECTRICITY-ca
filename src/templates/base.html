@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Grid Consumption Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+    <div class="app-shell">
+        <header class="app-header">
+            <div>
+                <h1>Electricity Consumption Pattern Discovery</h1>
+                <p class="subtitle">Smart analysis dashboard for smart grid load balancing.</p>
+            </div>
+        </header>
+
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="app-footer">
+            <p>Backend clustering powered by K-Means and DBSCAN. Upload a CSV with hourly consumption data to analyze load patterns.</p>
+        </footer>
+    </div>
+</body>
+</html>

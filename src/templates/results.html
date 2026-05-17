@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card result-card">
+    <div class="summary-panel">
+        <h2>Analysis Results</h2>
+        <p class="meta">Source: <strong>{{ 'Sample dataset' if analysis.source == 'sample' else 'Uploaded CSV' }}</strong></p>
+        <p class="meta">File: <strong>{{ analysis.filename }}</strong></p>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-value">{{ analysis.count }}</span>
+                <span class="stat-label">Records analyzed</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ analysis.outliers }}</span>
+                <span class="stat-label">DBSCAN outliers</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ analysis.clusters|length }}</span>
+                <span class="stat-label">K-Means clusters</span>
+            </div>
+        </div>
+    </div>
+
+    <section class="analysis-detail">
+        <h3>Calculation details</h3>
+        <div class="detail-grid">
+            <div class="detail-card">
+                <h4>Feature construction</h4>
+                <p>Each record uses 24 hourly values for h0–h23.</p>
+                <ul>
+                    <li><strong>avg_load</strong> = mean(h0 … h23)</li>
+                    <li><strong>peak_load</strong> = max(h0 … h23)</li>
+                    <li><strong>morning_load</strong> = mean(h6 … h11)</li>
+                    <li><strong>evening_load</strong> = mean(h17 … h22)</li>
+                    <li><strong>load_variance</strong> = variance of all 24 hours</li>
+                </ul>
+            </div>
+            <div class="detail-card">
+                <h4>Overall metrics</h4>
+                <p>These averages describe the dataset before clustering.</p>
+                <ul>
+                    <li>Average load: {{ analysis.metrics.avg_load_mean | round(3) }}</li>
+                    <li>Peak load: {{ analysis.metrics.peak_load_mean | round(3) }}</li>
+                    <li>Morning load: {{ analysis.metrics.morning_load_mean | round(3) }}</li>
+                    <li>Evening load: {{ analysis.metrics.evening_load_mean | round(3) }}</li>
+                    <li>Load variance: {{ analysis.metrics.variance_mean | round(3) }}</li>
+                </ul>
+            </div>
+            <div class="detail-card">
+                <h4>Cluster summary</h4>
+                <p>Each cluster groups similar daily consumption patterns.</p>
+                <ul>
+                    {% for cluster in analysis.cluster_stats %}
+                    <li>Cluster {{ cluster.cluster_label }}: {{ cluster.count }} records, avg distance {{ cluster.mean_distance | round(3) }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section class="cluster-table">
+        <h3>Cluster population</h3>
+        <table>
+            <thead>
+                <tr><th>Cluster</th><th>Count</th><th>Avg load</th><th>Peak load</th></tr>
+            </thead>
+            <tbody>
+                {% for cluster in analysis.cluster_feature_means %}
+                <tr>
+                    <td>{{ cluster.kmeans_cluster }}</td>
+                    <td>{{ analysis.clusters[loop.index0].count }}</td>
+                    <td>{{ cluster.avg_load }}</td>
+                    <td>{{ cluster.peak_load }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="plots-grid">
+        <article>
+            <div class="plot-header">
+                <h4>PCA scatter by cluster</h4>
+                <button type="button" class="toggle-expand">Expand</button>
+            </div>
+            <div class="plotly-figure">{{ analysis.plot_html.pca | safe }}</div>
+            <div class="plot-actions">
+                <a class="inline-button" href="{{ url_for('static', filename='analysis/' ~ analysis.plot_files.pca) }}" target="_blank">Open full PNG</a>
+                <a class="inline-button" href="{{ url_for('static', filename='analysis/' ~ analysis.plot_files.pca) }}" download>Download PNG</a>
+            </div>
+            <div class="chart-detail">
+                <h5>Point details</h5>
+                <pre class="detail-text">{{ analysis.explanations.pca }}\n\nClick a point for cluster and PCA coordinate details.</pre>
+            </div>
+        </article>
+        <article>
+            <div class="plot-header">
+                <h4>Hourly cluster heatmap</h4>
+                <button type="button" class="toggle-expand">Expand</button>
+            </div>
+            <div class="plotly-figure">{{ analysis.plot_html.heatmap | safe }}</div>
+            <div class="plot-actions">
+                <a class="inline-button" href="{{ url_for('static', filename='analysis/' ~ analysis.plot_files.heatmap) }}" target="_blank">Open full PNG</a>
+                <a class="inline-button" href="{{ url_for('static', filename='analysis/' ~ analysis.plot_files.heatmap) }}" download>Download PNG</a>
+            </div>
+            <div class="chart-detail">
+                <h5>Point details</h5>
+                <pre class="detail-text">{{ analysis.explanations.heatmap }}\n\nClick a cell or point for average hourly consumption details.</pre>
+            </div>
+        </article>
+        <article>
+            <div class="plot-header">
+                <h4>K-Means elbow curve</h4>
+                <button type="button" class="toggle-expand">Expand</button>
+            </div>
+            <div class="plotly-figure">{{ analysis.plot_html.elbow | safe }}</div>
+            <div class="plot-actions">
+                <a class="inline-button" href="{{ url_for('static', filename='analysis/' ~ analysis.plot_files.elbow) }}" target="_blank">Open full PNG</a>
+                <a class="inline-button" href="{{ url_for('static', filename='analysis/' ~ analysis.plot_files.elbow) }}" download>Download PNG</a>
+            </div>
+            <div class="chart-detail">
+                <h5>Point details</h5>
+                <pre class="detail-text">{{ analysis.explanations.elbow }}\n\nClick a point on the curve to inspect the number of clusters and inertia.</pre>
+            </div>
+        </article>
+        <article>
+            <div class="plot-header">
+                <h4>Silhouette score trend</h4>
+                <button type="button" class="toggle-expand">Expand</button>
+            </div>
+            <div class="plotly-figure">{{ analysis.plot_html.silhouette | safe }}</div>
+            <div class="plot-actions">
+                <a class="inline-button" href="{{ url_for('static', filename='analysis/' ~ analysis.plot_files.silhouette) }}" target="_blank">Open full PNG</a>
+                <a class="inline-button" href="{{ url_for('static', filename='analysis/' ~ analysis.plot_files.silhouette) }}" download>Download PNG</a>
+            </div>
+            <div class="chart-detail">
+                <h5>Point details</h5>
+                <pre class="detail-text">{{ analysis.explanations.silhouette }}\n\nClick a point for silhouette score details at each cluster count.</pre>
+            </div>
+        </article>
+    </section>
+
+    <div class="actions">
+        <a href="{{ url_for('index') }}" class="secondary-button">Upload another file</a>
+    </div>
+</div>
+
+<script>
+window.addEventListener('load', function () {
+    const articles = document.querySelectorAll('.plots-grid article');
+    articles.forEach(article => {
+        const button = article.querySelector('.toggle-expand');
+        const detailText = article.querySelector('.detail-text');
+        button?.addEventListener('click', () => {
+            const isExpanded = article.classList.toggle('expanded');
+            button.textContent = isExpanded ? 'Collapse' : 'Expand';
+        });
+
+        const graphDiv = article.querySelector('.plotly-graph-div, .js-plotly-plot');
+        if (graphDiv && detailText && window.Plotly) {
+            graphDiv.on('plotly_click', function (eventData) {
+                if (!eventData || !eventData.points) return;
+                const details = eventData.points.map(pt => {
+                    const label = pt.fullData?.name || pt.data?.name || 'trace';
+                    const xVal = pt.x !== undefined ? pt.x : pt.pointNumber;
+                    const yVal = pt.y !== undefined ? pt.y : pt.z;
+                    const custom = pt.customdata !== undefined ? pt.customdata : pt.text;
+                    return `Trace: ${label}\nX: ${xVal}\nY: ${yVal}\nPoint index: ${pt.pointNumber || '-'}\nDetail: ${custom || 'n/a'}`;
+                }).join('\n\n');
+                detailText.textContent = details;
+                article.classList.add('has-details');
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

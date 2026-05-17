@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card upload-card">
+    <h2>Upload your consumption CSV</h2>
+    <p>Upload any CSV with 24 hourly values per row. Column names can be <strong>h0–h23</strong>, <strong>hour0–hour23</strong>, <strong>0–23</strong>, or similar numeric hour labels.</p>
+
+    {% if error %}
+    <div class="alert error">{{ error }}</div>
+    {% endif %}
+
+    <form action="{{ url_for('analyze') }}" method="post" enctype="multipart/form-data">
+        <label class="file-input-label" for="csv_file">Select CSV file</label>
+        <input type="file" name="csv_file" id="csv_file" accept=".csv" />
+
+        <button type="submit" class="primary-button">Analyze consumption patterns</button>
+    </form>
+
+    <div class="upload-actions">
+        <form action="{{ url_for('analyze') }}" method="post">
+            <input type="hidden" name="use_sample" value="1" />
+            <button type="submit" class="secondary-button">Analyze sample power dataset</button>
+        </form>
+        <a href="{{ url_for('download_sample') }}" class="secondary-button">Download sample dataset</a>
+    </div>
+
+    <div class="notes">
+        <h3>Why this works</h3>
+        <p>This interface detects hourly consumption series and extracts core load features before applying unsupervised clustering. The sample dataset shows the expected result format for viewers and evaluators.</p>
+    </div>
+</div>
+{% endblock %}
